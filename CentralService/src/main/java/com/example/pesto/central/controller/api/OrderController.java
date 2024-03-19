@@ -25,10 +25,10 @@ public class OrderController {
     OrderService orderService;
 
     @PostMapping(Endpoints.OrderAPI.CREATE)
-    public CreateOrderResponseDTO createOrder(@Valid @RequestBody CreateOrderRequestDTO requestDTO){
+    public CreateOrderResponseDTO createOrder(@RequestHeader("Authorization") String token, @Valid @RequestBody CreateOrderRequestDTO requestDTO){
         CustomUser contextUser = authenticate();
         log.info("API request to create order for userId : "+contextUser.getId());
-        return orderService.createOrder(contextUser.getId(), requestDTO);
+        return orderService.createOrder(token, contextUser.getId(), requestDTO);
     }
 
     @PostMapping(Endpoints.OrderAPI.UPDATE)
@@ -50,9 +50,9 @@ public class OrderController {
     }
 
     @GetMapping(Endpoints.OrderAPI.VIEW_DETAILS)
-    public GetOrderDetailsResponseDTO viewOrderDetails(@Valid @RequestParam String orderId){
+    public GetOrderDetailsResponseDTO viewOrderDetails(@RequestHeader("Authorization") String token, @Valid @RequestParam String orderId){
         log.info("API request to view product details");
-        return orderService.getOrderDetails(orderId);
+        return orderService.getOrderDetails(token, orderId);
     }
 
     @PostMapping(Endpoints.OrderAPI.CANCEL)

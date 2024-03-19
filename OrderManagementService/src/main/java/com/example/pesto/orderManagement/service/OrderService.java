@@ -3,18 +3,25 @@ package com.example.pesto.orderManagement.service;
 import com.example.pesto.commons.dao.Order;
 import com.example.pesto.commons.enums.OrderStatus;
 import com.example.pesto.commons.enums.PaymentStatus;
+import com.example.pesto.orderManagement.dao.ProductDAO;
 import com.example.pesto.orderManagement.dto.request.CancelOrderRequestDTO;
 import com.example.pesto.orderManagement.dto.request.CreateOrderRequestDTO;
 import com.example.pesto.orderManagement.dto.request.UpdateOrderRequestDTO;
 import com.example.pesto.orderManagement.dto.response.*;
 import com.example.pesto.orderManagement.exceptions.PestoOrderNotFoundException;
+import com.example.pesto.orderManagement.exceptions.PestoProductNotFoundException;
 import com.example.pesto.orderManagement.repository.OrderRepository;
 import lombok.extern.slf4j.Slf4j;
+import lombok.var;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 
 import javax.transaction.Transactional;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,7 +32,8 @@ public class OrderService {
     @Autowired
     OrderRepository orderRepository;
 
-    public CreateOrderResponseDTO createOrder(String userId, CreateOrderRequestDTO requestDTO){
+    public CreateOrderResponseDTO createOrder(String token, String userId, CreateOrderRequestDTO requestDTO){
+
 
         Order order = new Order();
         order.setId(generateId());
@@ -40,8 +48,13 @@ public class OrderService {
         order.setAddress(requestDTO.getAddress());
         order.setPaymentStatus(PaymentStatus.valueOf(requestDTO.getPaymentStatus()));
         order.setQuantity(requestDTO.getQuantity());
-        orderRepository.save(order);
 
+        ProductDAO productDAO = formResponseObject(token,order);
+        if(productDAO == null){
+            throw new PestoProductNotFoundException();
+        }
+
+        orderRepository.save(order);
         return CreateOrderResponseDTO.builder().id(order.getId()).message("Successfully created order").build();
     }
 
@@ -70,11 +83,11 @@ public class OrderService {
         return GetOrdersResponseDTO.builder().orders(orderList).build();
     }
 
-    public GetOrderDetailsResponseDTO getOrderDetails(String orderId){
+    public GetOrderDetailsResponseDTO getOrderDetails(String token, String orderId){
         Order order = orderRepository.findById(orderId).orElse(null);
         return GetOrderDetailsResponseDTO.builder()
-                .id(orderId)
-                .prodId(order.getProdId())
+                .id(order.getId())
+                .product(formResponseObject(token, order))
                 .address(order.getAddress())
                 .quantity(order.getQuantity())
                 .paymentStatus(order.getPaymentStatus().toString())
@@ -82,6 +95,21 @@ public class OrderService {
                 .creationDate(order.getCreationDate())
                 .modifiedDate(order.getModifiedDate())
                 .build();
+    }
+
+    private ProductDAO formResponseObject(String token, Order order){
+        String url = "http://127.0.0.1:8080/api/product/detail?prodId="+order.getProdId();
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", token);
+        HttpEntity request = new HttpEntity(headers);
+        try{
+            var response = restTemplate.exchange(url, HttpMethod.GET, request, ProductDAO.class);
+            ProductDAO product = response.getBody();
+            return product;
+        }catch (HttpClientErrorException ex){
+            return null;
+        }
     }
 
 
