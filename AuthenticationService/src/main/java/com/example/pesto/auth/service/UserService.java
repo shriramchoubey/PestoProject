@@ -1,7 +1,9 @@
 package com.example.pesto.auth.service;
+import com.example.pesto.auth.dto.request.CreateUserRequestDTO;
 import com.example.pesto.auth.dto.request.PageableRequestDTO;
 import com.example.pesto.commons.dao.User;
 import com.example.pesto.auth.dto.response.PageableResponseDTO;
+import com.example.pesto.commons.enums.Role;
 import com.example.pesto.commons.exceptions.ProjectUserAlreadyExist;
 import com.example.pesto.commons.repository.UserRepository;
 
@@ -26,19 +28,23 @@ public class UserService{
     public PageableResponseDTO getUserList(String user, PageableRequestDTO userListRequestDTO){
         return PageableResponseDTO.builder().build();
     }
-    public void addUser(User user){
-        log.info("Saving employee to db");
-        user.setPassword(bcryptEncoder.encode(user.getPassword()));
+    public void addUser(CreateUserRequestDTO requestDTO){
 
-        try{
-            User us = userRepository.findById(user.getUsername()).get();
+        User user = new User();
+        user.setUsername(requestDTO.getUsername());
+        user.setName(requestDTO.getName());
+        user.setRole(Role.valueOf(requestDTO.getRole()));
+        user.setEmail(requestDTO.getEmail());
+
+
+        user.setPassword(bcryptEncoder.encode(requestDTO.getPassword()));
+
+        User existingUser = userRepository.findById(requestDTO.getUsername()).orElse(null);
+        if(existingUser != null){
+            log.info("user already exist in DB");
             throw new ProjectUserAlreadyExist();
-        }catch (EntityNotFoundException ex){
-            userRepository.save(user);
         }
-        catch ( NoSuchElementException ex){
-            userRepository.save(user);
-        }
-
+        userRepository.save(user);
+        log.info("saved new user to db");
     }
 }

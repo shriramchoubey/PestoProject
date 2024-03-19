@@ -5,10 +5,11 @@ import com.example.pesto.productManagement.dto.request.CreateProductRequestDTO;
 import com.example.pesto.productManagement.dto.request.DeleteProductRequestDTO;
 import com.example.pesto.productManagement.dto.request.UpdateProductRequestDTO;
 import com.example.pesto.productManagement.dto.response.*;
+import com.example.pesto.productManagement.exceptions.PestoProductNotFoundException;
 import com.example.pesto.productManagement.repository.ProductRepository;
 import lombok.extern.slf4j.Slf4j;
-import lombok.var;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -40,25 +41,24 @@ public class ProductService {
         return CreateProductResponseDTO.builder().id(product.getId()).message("Successfully create product").build();
     }
 
-    @Transactional
     public UpdateProductResponseDTO updateProduct(String userId, UpdateProductRequestDTO requestDTO){
 
         Product product = productRepository.findById(requestDTO.getId()).orElse(null);
         if(product == null){
             String message = String.format("No product exist with id: %s", requestDTO.getId());
-            return UpdateProductResponseDTO.builder().message(message).build();
+            log.info(message);
+            throw new PestoProductNotFoundException();
         }
 
         String updatedById = userId;
 
         product.setLastUpdatedBy(updatedById);
-        product.setName(requestDTO.getName());
-        product.setImage(requestDTO.getImage());
-        product.setDescription(requestDTO.getDescription());
+        product.setName(requestDTO.getName() != null ? requestDTO.getName() : product.getName());
+        product.setImage(requestDTO.getImage() != null ? requestDTO.getImage() : product.getImage());
+        product.setDescription(requestDTO.getDescription() != null ? requestDTO.getDescription() : product.getDescription());
         product.setModifiedDate(System.currentTimeMillis());
 
-        productRepository.save(product);
-
+        updateProduct(product);
         String message = String.format("Successfully update the product with id: %s", requestDTO.getId());
         return UpdateProductResponseDTO.builder().message(message).build();
     }
@@ -72,7 +72,8 @@ public class ProductService {
         Product prod = productRepository.findById(prodId).orElse(null);
         if(prod == null){
             String message = String.format("No product exist with id: %s", prodId);
-            return ViewProductDetailsResponsDTO.builder().message(message).build();
+            log.info(message);
+            throw new PestoProductNotFoundException();
         }
 
         return ViewProductDetailsResponsDTO.builder()
@@ -82,6 +83,15 @@ public class ProductService {
                 .image(prod.getImage())
                 .creationDate(prod.getCreationDate())
                 .build();
+    }
+
+    @Transactional
+    public void updateProduct(Product updatedProduct) throws OptimisticLockingFailureException{
+        Product currOrder = productRepository.findById(updatedProduct.getId()).orElse(null);
+        if(currOrder == null || updatedProduct.getVersion() != currOrder.getVersion()){
+            throw new OptimisticLockingFailureException("Product has been modified by another transaction, Try again");
+        }
+        productRepository.save(updatedProduct);
     }
 
 

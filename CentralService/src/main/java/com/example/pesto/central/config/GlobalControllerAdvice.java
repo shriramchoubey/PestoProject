@@ -23,7 +23,11 @@ public class GlobalControllerAdvice {
 
     @ExceptionHandler({ PestoException.class })
     public ResponseEntity<ExceptionResponseDTO> projectExceptionHandler(final PestoException ex) {
-        log.error("Project exception occurred", ex);
+
+        if(!ex.getResponseHttpStatus().is4xxClientError()){
+            log.error("Project exception occurred", ex);
+        }
+
         ExceptionResponseDTO resp = new ExceptionResponseDTO(ex.getMessage());
         return new ResponseEntity<>(resp, ex.getResponseHttpStatus());
     }
@@ -38,7 +42,6 @@ public class GlobalControllerAdvice {
     @ExceptionHandler({ MethodArgumentTypeMismatchException.class })
     public ResponseEntity<ExceptionResponseDTO> methodArgumentTypeMismatchExceptionHandler(
             final MethodArgumentTypeMismatchException ex) {
-        log.error("Mismatch exception", ex);
         ExceptionResponseDTO resp = new ExceptionResponseDTO("Improper request");
         return new ResponseEntity<>(resp, HttpStatus.BAD_REQUEST);
     }
@@ -46,7 +49,6 @@ public class GlobalControllerAdvice {
     @ExceptionHandler({ MissingServletRequestParameterException.class })
     public ResponseEntity<String> missingServletRequestParameterException(
             final MethodArgumentTypeMismatchException ex) {
-        log.error("Mismatch exception", ex);
         String message = "{\"message\": \" Required params missing : "+ex.getParameter()+ "\"}";
         return new ResponseEntity<String>(message, HttpStatus.BAD_REQUEST);
     }
@@ -54,7 +56,6 @@ public class GlobalControllerAdvice {
     @ExceptionHandler({ MissingServletRequestPartException.class })
     public ResponseEntity<String> MissingServletRequestPartException(
             final MissingServletRequestPartException ex) {
-        log.error("Mismatch exception", ex);
         String message = "{\"message\": \" Required params missing : "+ex.getRequestPartName()+ "\"}";
         return new ResponseEntity<String>(message, HttpStatus.BAD_REQUEST);
     }

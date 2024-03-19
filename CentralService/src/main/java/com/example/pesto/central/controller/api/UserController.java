@@ -4,7 +4,7 @@ import com.example.pesto.auth.dto.request.PageableRequestDTO;
 import com.example.pesto.auth.dto.response.PageableResponseDTO;
 import com.example.pesto.auth.service.UserService;
 import com.example.pesto.auth.util.CustomUser;
-import com.example.pesto.commons.dao.User;
+import com.example.pesto.auth.dto.request.CreateUserRequestDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -25,8 +25,9 @@ public class UserController {
     private UserService userService;
 
     @PostMapping(Endpoints.UserAPI.USER)
-    public ResponseEntity<String> createUser( @Valid @RequestBody User UserRequestDTO){
-      userService.addUser(UserRequestDTO);
+    public ResponseEntity<String> createUser( @Valid @RequestBody CreateUserRequestDTO requestDTO){
+      log.info("Request to create new user");
+      userService.addUser(requestDTO);
       return new ResponseEntity<>("User created successfully", HttpStatus.OK);
     }
     @PostMapping(Endpoints.UserAPI.USERLIST)

@@ -18,7 +18,6 @@ public class MainApplication {
         SpringApplication.run(MainApplication.class, args);
         for (Map.Entry<String,String> entry : System.getenv().entrySet())
             System.out.println("______ENVIRONMENT______ Key = "+ entry.getKey()+", Value = "+ entry.getValue());
-
     }
 
 

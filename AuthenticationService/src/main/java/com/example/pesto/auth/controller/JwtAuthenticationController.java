@@ -2,6 +2,7 @@ package com.example.pesto.auth.controller;
 
 import com.example.pesto.auth.dto.request.JwtRequest;
 import com.example.pesto.auth.dto.response.JwtResponse;
+import com.example.pesto.auth.service.AuthenticationTokenService;
 import com.example.pesto.auth.service.JwtUserService;
 import com.example.pesto.auth.util.JwtTokenUtil;
 import com.example.pesto.commons.exceptions.UserDisabledException;
@@ -26,30 +27,11 @@ import java.util.NoSuchElementException;
 @RequestMapping(Endpoints.Auth.BASE_URL)
 public class JwtAuthenticationController {
     @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private JwtTokenUtil jwtTokenUtil;
-
-    @Autowired
-    private JwtUserService userDetailsService;
+    AuthenticationTokenService tokenService;
 
     @PostMapping(value = Endpoints.Auth.AUTHENTICATE)
-    public ResponseEntity<?> createAuthenticationToken(@RequestBody @Valid JwtRequest authenticationRequest) throws Exception {
-        authenticate(authenticationRequest.getUsername(), authenticationRequest.getPassword());
-        final UserDetails userDetails = userDetailsService.loadUserByUsername(authenticationRequest.getUsername());
-        final String token = jwtTokenUtil.generateToken(userDetails);
-        return ResponseEntity.ok(new JwtResponse(token));
+    public ResponseEntity<?> createAuthenticationToken(@RequestBody @Valid JwtRequest reequest) throws Exception {
+        return ResponseEntity.ok(tokenService.createToken(reequest.getUsername(), reequest.getPassword()));
     }
-    private void authenticate(String username, String password) {
-        try {
-            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
-        } catch (DisabledException e) {
-            throw new UserDisabledException(e);
-        } catch (BadCredentialsException e) {
-            throw new WrongLoginCredentials(e);
-        }catch (UsernameNotFoundException e) {
-            throw new WrongLoginCredentials(e);
-        }
-    }
+
 }

@@ -8,7 +8,6 @@ import lombok.EqualsAndHashCode;
 
 
 import javax.persistence.*;
-import javax.validation.constraints.NotBlank;
 
 @Entity
 @Data @Table(name="orders")
